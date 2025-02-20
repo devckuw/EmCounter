@@ -1,32 +1,35 @@
-﻿using Dalamud.Game.Command;
+using Dalamud.Game.Command;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using System.IO;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
-using SamplePlugin.Windows;
+using EmCounter.Windows;
+using Dalamud.Game.ClientState.Objects;
+using Dalamud.Game;
 
-namespace SamplePlugin;
+namespace EmCounter;
 
 public sealed class Plugin : IDalamudPlugin
 {
     [PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
-    [PluginService] internal static ITextureProvider TextureProvider { get; private set; } = null!;
-    [PluginService] internal static ICommandManager CommandManager { get; private set; } = null!;
-    [PluginService] internal static IClientState ClientState { get; private set; } = null!;
-    [PluginService] internal static IDataManager DataManager { get; private set; } = null!;
-    [PluginService] internal static IPluginLog Log { get; private set; } = null!;
 
-    private const string CommandName = "/pmycommand";
+    private const string CommandName = "/emotecounter";
 
     public Configuration Configuration { get; init; }
 
-    public readonly WindowSystem WindowSystem = new("SamplePlugin");
+    public readonly WindowSystem WindowSystem = new("Emote Counter");
     private ConfigWindow ConfigWindow { get; init; }
     private MainWindow MainWindow { get; init; }
 
+    private EmoteReaderHooks emoteReader;
+    private EmoteDataManager emoteDataManager;
+
     public Plugin()
     {
+
+        PluginInterface.Create<Service>();
+
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
 
         // you might normally want to embed resources and load them from the manifest stream
@@ -38,7 +41,7 @@ public sealed class Plugin : IDalamudPlugin
         WindowSystem.AddWindow(ConfigWindow);
         WindowSystem.AddWindow(MainWindow);
 
-        CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
+        Service.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
             HelpMessage = "A useful message to display in /xlhelp"
         });
@@ -52,20 +55,35 @@ public sealed class Plugin : IDalamudPlugin
         // Adds another button that is doing the same but for the main ui of the plugin
         PluginInterface.UiBuilder.OpenMainUi += ToggleMainUI;
 
+        emoteReader = new EmoteReaderHooks(this);
+        emoteDataManager = new EmoteDataManager();
+
+        emoteReader.OnEmote += emoteReader.OnEmote;
+        Service.ClientState.Login += emoteDataManager.OnLogin;
+        Service.ClientState.Logout += emoteDataManager.OnLogout;
+        Service.ClientState.TerritoryChanged += emoteDataManager.OnTerritoryChanged;
+
         // Add a simple message to the log with level set to information
         // Use /xllog to open the log window in-game
         // Example Output: 00:57:54.959 | INF | [SamplePlugin] ===A cool log message from Sample Plugin===
-        Log.Information($"===A cool log message from {PluginInterface.Manifest.Name}===");
+        Service.Log.Information($"===A cool log message from {PluginInterface.Manifest.Name}===");
     }
 
     public void Dispose()
     {
+        emoteReader.OnEmote -= emoteReader.OnEmote;
+        Service.ClientState.Login -= emoteDataManager.OnLogin;
+        Service.ClientState.Logout -= emoteDataManager.OnLogout;
+        Service.ClientState.TerritoryChanged -= emoteDataManager.OnTerritoryChanged;
+        emoteDataManager.Dispose();
+        emoteReader.Dispose();
+
         WindowSystem.RemoveAllWindows();
 
         ConfigWindow.Dispose();
         MainWindow.Dispose();
 
-        CommandManager.RemoveHandler(CommandName);
+        Service.CommandManager.RemoveHandler(CommandName);
     }
 
     private void OnCommand(string command, string args)
