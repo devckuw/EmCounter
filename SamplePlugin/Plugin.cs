@@ -56,9 +56,9 @@ public sealed class Plugin : IDalamudPlugin
         PluginInterface.UiBuilder.OpenMainUi += ToggleMainUI;
 
         emoteReader = new EmoteReaderHooks(this);
-        emoteDataManager = new EmoteDataManager();
+        emoteDataManager = new EmoteDataManager(this);
 
-        emoteReader.OnEmote += emoteReader.OnEmote;
+        emoteReader.OnEmote += emoteDataManager.OnEmote;
         Service.ClientState.Login += emoteDataManager.OnLogin;
         Service.ClientState.Logout += emoteDataManager.OnLogout;
         Service.ClientState.TerritoryChanged += emoteDataManager.OnTerritoryChanged;

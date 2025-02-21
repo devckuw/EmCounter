@@ -56,7 +56,7 @@ namespace EmCounter
 
                         if (canCount)
                         {
-                            Service.Log.Info($"on me {instigatorOb.ObjectIndex} {instigatorOb.EntityId:X} {instigatorOb.Name} {instigatorOb.HomeWorld.Value.Name}");
+                            //Service.Log.Info($"on me {instigatorOb.ObjectIndex} {instigatorOb.EntityId:X} {instigatorOb.Name} {instigatorOb.HomeWorld.Value.Name}");
                             //Service.Log.Debug("emote handler ?");
                             //plugin.emoteHandler.ProcessEmote(emoteId, $"{instigatorOb.Name} {instigatorOb.HomeWorld.Value.Name}");
                             OnEmote?.Invoke(instigatorOb, emoteId);

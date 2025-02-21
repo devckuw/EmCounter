@@ -1,6 +1,7 @@
 using Dalamud.Configuration;
 using Dalamud.Plugin;
 using System;
+using System.Collections.Generic;
 
 namespace EmCounter;
 
@@ -11,6 +12,8 @@ public class Configuration : IPluginConfiguration
 
     public bool IsConfigWindowMovable { get; set; } = true;
     public bool SomePropertyToBeSavedAndWithADefault { get; set; } = true;
+    public Dictionary<ulong, Dictionary<ulong, Dictionary<ushort, int>>> dataCount = new Dictionary<ulong, Dictionary<ulong, Dictionary<ushort, int>>>();
+    public Dictionary<ulong, string> dataNames = new Dictionary<ulong, string>();
 
     // the below exist just to make saving less cumbersome
     public void Save()
