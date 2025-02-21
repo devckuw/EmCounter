@@ -1,0 +1,90 @@
+using Dalamud.Game.ClientState.Objects.SubKinds;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Dalamud.Game.Gui.FlyText;
+using Dalamud.Game.ClientState.Objects.Enums;
+using System.Diagnostics.Metrics;
+
+namespace EmCounter;
+
+public class RewardFlyTextPat
+{
+
+    public List<DateTime> recentPatTimes = new();
+    private Random rand = new Random();
+
+    public void OnPat(IPlayerCharacter instigator, string emote, uint count)
+    {
+        if (Service.ClientState == null || Service.ClientState.LocalPlayer == null)
+        {
+            return;
+        }
+        if (Service.pluginConfig.showFlyText)
+        {
+            var useDesc = emote.ToUpper();
+            var useSubDesc = Service.pluginConfig.showFlyTextNames && instigator != null ? instigator.Name : " ";
+            var useColor = 0xff00ff00;
+
+            bool isLongRange = (instigator != null) && (instigator.YalmDistanceX > 7 || instigator.YalmDistanceZ > 7);
+            bool isOwnerAFK = Service.ClientState.LocalPlayer.OnlineStatus.RowId == 17;
+            bool isOwnerInCombat = (Service.ClientState.LocalPlayer.StatusFlags & StatusFlags.InCombat) != 0;
+            UpdateTimestamps(out int numPatsInLast3s);
+
+            if (isLongRange)
+            {
+                useDesc = "Distant " + useDesc;
+            }
+            else if (isOwnerAFK)
+            {
+                useDesc = "Sneaky " + useDesc;
+            }
+            else if (isOwnerInCombat)
+            {
+                useDesc = "Calming " + useDesc;
+            }
+            else if (numPatsInLast3s >= 3)
+            {
+                useDesc = "Quick " + useDesc;
+
+                if (numPatsInLast3s >= 6)
+                {
+                    useSubDesc = "HEAD TRAUMA WARNING !!";
+                    useColor = 0xff0040ff;
+                }
+            }
+            else if (rand.NextSingle() < 0.01)
+            {
+                useDesc = "PERFECT " + useDesc;
+                useColor = 0xff00d7ff;
+            }
+
+            Service.flyTextGui?.AddFlyText(FlyTextKind.DamageCritDh, 0, count, 0, useDesc, useSubDesc, useColor, 0, 0);
+        }
+    }
+
+    private void UpdateTimestamps(out int numPatsInLast3s)
+    {
+        while (recentPatTimes.Count > 16)
+        {
+            recentPatTimes.RemoveAt(0);
+        }
+
+        var timeNow = DateTime.Now;
+        recentPatTimes.Add(timeNow);
+
+        numPatsInLast3s = 1;
+        for (int idx = recentPatTimes.Count - 2; idx >= 0; idx--) // ignore len -1, it's == timeNow
+        {
+            var timeSince = timeNow.Subtract(recentPatTimes[idx]);
+            if (timeSince.TotalMilliseconds > 3000)
+            {
+                break;
+            }
+
+            numPatsInLast3s++;
+        }
+    }
+}

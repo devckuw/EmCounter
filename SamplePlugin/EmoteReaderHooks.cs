@@ -16,11 +16,9 @@ namespace EmCounter
         private readonly Hook<OnEmoteFuncDelegate>? hookEmote;
 
         public bool IsValid = false;
-        Plugin plugin;
 
-        public EmoteReaderHooks(Plugin p)
+        public EmoteReaderHooks()
         {
-            plugin = p;
             try
             {
                 hookEmote = Service.InteropSigScanner.HookFromSignature<OnEmoteFuncDelegate>("E8 ?? ?? ?? ?? 48 8D 8B ?? ?? ?? ?? 4C 89 74 24", OnEmoteDetour);

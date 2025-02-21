@@ -9,9 +9,9 @@ namespace EmCounter;
 public class Configuration : IPluginConfiguration
 {
     public int Version { get; set; } = 0;
+    public bool showFlyText { get; set; } = true;
+    public bool showFlyTextNames { get; set; } = true;
 
-    public bool IsConfigWindowMovable { get; set; } = true;
-    public bool SomePropertyToBeSavedAndWithADefault { get; set; } = true;
     public Dictionary<ulong, Dictionary<ulong, Dictionary<ushort, int>>> dataCount = new Dictionary<ulong, Dictionary<ulong, Dictionary<ushort, int>>>();
     public Dictionary<ulong, string> dataNames = new Dictionary<ulong, string>();
 

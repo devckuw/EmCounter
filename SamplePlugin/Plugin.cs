@@ -16,8 +16,6 @@ public sealed class Plugin : IDalamudPlugin
 
     private const string CommandName = "/emotecounter";
 
-    public Configuration Configuration { get; init; }
-
     public readonly WindowSystem WindowSystem = new("Emote Counter");
     private ConfigWindow ConfigWindow { get; init; }
     private MainWindow MainWindow { get; init; }
@@ -29,29 +27,30 @@ public sealed class Plugin : IDalamudPlugin
     {
 
         PluginInterface.Create<Service>();
-
-        Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+        Service.plugin = this;
+        Service.pluginInterface = PluginInterface;
+        Service.pluginConfig = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
 
         // you might normally want to embed resources and load them from the manifest stream
         var goatImagePath = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "goat.png");
 
-        emoteReader = new EmoteReaderHooks(this);
-        emoteDataManager = new EmoteDataManager(this);
+        emoteReader = new EmoteReaderHooks();
+        emoteDataManager = new EmoteDataManager();
 
         emoteReader.OnEmote += emoteDataManager.OnEmote;
         Service.ClientState.Login += emoteDataManager.OnLogin;
         Service.ClientState.Logout += emoteDataManager.OnLogout;
         Service.ClientState.TerritoryChanged += emoteDataManager.OnTerritoryChanged;
 
-        ConfigWindow = new ConfigWindow(this);
-        MainWindow = new MainWindow(this, emoteDataManager);
+        ConfigWindow = new ConfigWindow();
+        MainWindow = new MainWindow(emoteDataManager);
 
         WindowSystem.AddWindow(ConfigWindow);
         WindowSystem.AddWindow(MainWindow);
 
         Service.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
-            HelpMessage = "A useful message to display in /xlhelp"
+            HelpMessage = "Open the main window."
         });
 
         PluginInterface.UiBuilder.Draw += DrawUI;

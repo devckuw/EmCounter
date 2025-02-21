@@ -13,7 +13,6 @@ public class EmoteDataManager : IDisposable
 
     private string ownerName = string.Empty;
     private ulong ownerCID;
-    private Plugin p;
 
     private int counterChanged = 0;
     private Dictionary<ulong, Dictionary<ushort, int>> counter;
@@ -21,10 +20,12 @@ public class EmoteDataManager : IDisposable
     private List<ushort> emotes;
     private Dictionary<ushort, string> emotesNames = new Dictionary<ushort, string>();
 
-    public EmoteDataManager(Plugin p)
+    private RewardFlyTextPat rewardPat = new RewardFlyTextPat();
+    private List<ushort> allowedEmoteReward = new List<ushort> { 105, 112, 113 , 146, 147 };
+
+    public EmoteDataManager()
     {
         Service.Log.Debug("create EmoteDataManager");
-        this.p = p;
         UpdateOwner();
         foreach (var emote in Service.DataManager.GameData.GetExcelSheet<Emote>())
         {
@@ -84,6 +85,11 @@ public class EmoteDataManager : IDisposable
             counterChanged = 0;
             Save();
         }
+
+        if (allowedEmoteReward.Contains(emoteId))
+        {
+            rewardPat.OnPat(instigator, emotesNames[emoteId], (uint)counter[instigator.EntityId][emoteId]);
+        }
     }
 
     public void OnTerritoryChanged(ushort areaId)
@@ -127,20 +133,20 @@ public class EmoteDataManager : IDisposable
     {
         Service.Log.Debug("save");
         //p.Configuration.dataCount.Add(ownerCID, counter);
-        p.Configuration.dataCount[ownerCID] =  counter;
-        p.Configuration.dataNames = names;
-        p.Configuration.Save();
+        Service.pluginConfig.dataCount[ownerCID] =  counter;
+        Service.pluginConfig.dataNames = names;
+        Service.pluginConfig.Save();
     }
 
     public void Load()
     {
         Service.Log.Debug("load");
         //counter = p.Configuration.dataCount[ownerCID];
-        if (p.Configuration.dataCount.ContainsKey(ownerCID))
-            counter = p.Configuration.dataCount[ownerCID];
+        if (Service.pluginConfig.dataCount.ContainsKey(ownerCID))
+            counter = Service.pluginConfig.dataCount[ownerCID];
         else
             counter = new Dictionary<ulong, Dictionary<ushort, int>>();
-        names = p.Configuration.dataNames;
+        names = Service.pluginConfig.dataNames;
         if (names == null)
             names = new Dictionary<ulong, string>();
 

@@ -1,12 +1,12 @@
 {
-  "Author": "your name here",
-  "Name": "Emote Counter",
-  "Punchline": "A short one-liner that shows up in /xlplugins.",
-  "Description": "A description that shows up in /xlplugins. List any major slash-command(s).",
-  "ApplicableVersion": "any",
-  "Tags": [
-    "sample",
-    "plugin",
-    "Loody"
-  ]
+    "Author": "Loody",
+    "Name": "Emote Counter",
+    "Punchline": "Counts emotes received.",
+    "Description": "Counts emotes received on each character per player.",
+    "ApplicableVersion": "any",
+    "Tags": [
+        "sample",
+        "plugin",
+        "Loody"
+    ]
 }
