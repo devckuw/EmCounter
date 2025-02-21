@@ -35,8 +35,16 @@ public sealed class Plugin : IDalamudPlugin
         // you might normally want to embed resources and load them from the manifest stream
         var goatImagePath = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "goat.png");
 
+        emoteReader = new EmoteReaderHooks(this);
+        emoteDataManager = new EmoteDataManager(this);
+
+        emoteReader.OnEmote += emoteDataManager.OnEmote;
+        Service.ClientState.Login += emoteDataManager.OnLogin;
+        Service.ClientState.Logout += emoteDataManager.OnLogout;
+        Service.ClientState.TerritoryChanged += emoteDataManager.OnTerritoryChanged;
+
         ConfigWindow = new ConfigWindow(this);
-        MainWindow = new MainWindow(this, goatImagePath);
+        MainWindow = new MainWindow(this, emoteDataManager);
 
         WindowSystem.AddWindow(ConfigWindow);
         WindowSystem.AddWindow(MainWindow);
@@ -54,14 +62,6 @@ public sealed class Plugin : IDalamudPlugin
 
         // Adds another button that is doing the same but for the main ui of the plugin
         PluginInterface.UiBuilder.OpenMainUi += ToggleMainUI;
-
-        emoteReader = new EmoteReaderHooks(this);
-        emoteDataManager = new EmoteDataManager(this);
-
-        emoteReader.OnEmote += emoteDataManager.OnEmote;
-        Service.ClientState.Login += emoteDataManager.OnLogin;
-        Service.ClientState.Logout += emoteDataManager.OnLogout;
-        Service.ClientState.TerritoryChanged += emoteDataManager.OnTerritoryChanged;
 
         // Add a simple message to the log with level set to information
         // Use /xllog to open the log window in-game

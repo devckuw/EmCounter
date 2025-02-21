@@ -1,4 +1,5 @@
 using Dalamud.Game.ClientState.Objects.SubKinds;
+using Lumina.Excel.Sheets;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,15 +15,24 @@ public class EmoteDataManager : IDisposable
     private ulong ownerCID;
     private Plugin p;
 
-    private bool counterChanged = false;
+    private int counterChanged = 0;
     private Dictionary<ulong, Dictionary<ushort, int>> counter;
     private Dictionary<ulong, string> names;
+    private List<ushort> emotes;
+    private Dictionary<ushort, string> emotesNames = new Dictionary<ushort, string>();
 
     public EmoteDataManager(Plugin p)
     {
         Service.Log.Debug("create EmoteDataManager");
         this.p = p;
         UpdateOwner();
+        foreach (var emote in Service.DataManager.GameData.GetExcelSheet<Emote>())
+        {
+            if (!emote.Name.IsEmpty)
+            {
+                emotesNames.Add((ushort)emote.RowId, emote.Name.ToString());
+            }
+        }
     }
 
     public void Dispose()
@@ -48,8 +58,15 @@ public class EmoteDataManager : IDisposable
     {
         if (ownerCID == 0)
             UpdateOwner();
+
+        if (!emotesNames.ContainsKey(emoteId))
+            return;
+
+        if (!emotes.Contains(emoteId))
+            emotes.Add(emoteId);
+
         Service.Log.Debug($"on emote => add count {instigator.EntityId:X} {emoteId}  {instigator.Name} {instigator.HomeWorld.Value.Name}");
-        counterChanged = true;
+        counterChanged++;
         names[instigator.EntityId] = instigator.Name.ToString();
         if (!counter.ContainsKey(instigator.EntityId))
             counter[instigator.EntityId] = new Dictionary<ushort, int>();
@@ -61,14 +78,20 @@ public class EmoteDataManager : IDisposable
         {
             counter[instigator.EntityId][emoteId]++;
         }
+        
+        if (counterChanged > 50)
+        {
+            counterChanged = 0;
+            Save();
+        }
     }
 
     public void OnTerritoryChanged(ushort areaId)
     {
         Service.Log.Debug("on TerritoryChanged");
-        if (counterChanged)
+        if (counterChanged > 0)
         {
-            counterChanged = false;
+            counterChanged = 0;
             Save();
         }
     }
@@ -120,6 +143,30 @@ public class EmoteDataManager : IDisposable
         names = p.Configuration.dataNames;
         if (names == null)
             names = new Dictionary<ulong, string>();
+
+        emotes = new List<ushort>();
+        foreach (var id in counter.Keys)
+        {
+            foreach (var em in counter[id])
+            {
+                emotes.Add(em.Key);
+            }
+        }
+        emotes = emotes.Distinct().ToList();
     }
 
+    public Dictionary<ulong, Dictionary<ushort, int>> GetCounter()
+    {
+        return counter;
+    }
+
+    public Dictionary<ulong, string> GetNames()
+    { 
+        return names; 
+    }
+
+    public List<ushort> GetEmotes()
+    { 
+        return emotes; 
+    }
 }

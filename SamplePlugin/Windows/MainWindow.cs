@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
@@ -10,97 +11,82 @@ namespace EmCounter.Windows;
 
 public class MainWindow : Window, IDisposable
 {
-    private string GoatImagePath;
     private Plugin Plugin;
+    private EmoteDataManager emoteDataManager;
+    private Dictionary<ushort, string> emotesNames = new Dictionary<ushort, string>();
 
     // We give this window a hidden ID using ##
     // So that the user will see "My Amazing Window" as window title,
     // but for ImGui the ID is "My Amazing Window##With a hidden ID"
-    public MainWindow(Plugin plugin, string goatImagePath)
-        : base("My Amazing Window##With a hidden ID", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
+    public MainWindow(Plugin plugin, EmoteDataManager emoteDataManager)
+        : base("Emote Counter##With a hidden ID")
     {
         SizeConstraints = new WindowSizeConstraints
         {
-            MinimumSize = new Vector2(375, 330),
+            MinimumSize = new Vector2(50, 50),
             MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
         };
 
-        GoatImagePath = goatImagePath;
         Plugin = plugin;
+        this.emoteDataManager = emoteDataManager;
+        foreach (var emote in Service.DataManager.GameData.GetExcelSheet<Emote>())
+        {
+            if (!emote.Name.IsEmpty)
+            {
+                emotesNames.Add((ushort)emote.RowId, emote.Name.ToString());
+            }
+        }
     }
 
     public void Dispose() { }
 
     public override void Draw()
     {
-        // Do not use .Text() or any other formatted function like TextWrapped(), or SetTooltip().
-        // These expect formatting parameter if any part of the text contains a "%", which we can't
-        // provide through our bindings, leading to a Crash to Desktop.
-        // Replacements can be found in the ImGuiHelpers Class
-        ImGui.TextUnformatted($"The random config bool is {Plugin.Configuration.SomePropertyToBeSavedAndWithADefault}");
-
-        if (ImGui.Button("Show Settings"))
+        using (var tab = ImRaii.Child("SomeChildWithAScrollbar", Vector2.Zero, false))
         {
-            Plugin.ToggleConfigUI();
-        }
-
-        ImGui.Spacing();
-
-        // Normally a BeginChild() would have to be followed by an unconditional EndChild(),
-        // ImRaii takes care of this after the scope ends.
-        // This works for all ImGui functions that require specific handling, examples are BeginTable() or Indent().
-        using (var child = ImRaii.Child("SomeChildWithAScrollbar", Vector2.Zero, true))
-        {
-            // Check if this child is drawing
-            if (child.Success)
+            if (tab.Success)
             {
-                ImGui.TextUnformatted("Have a goat:");
-                var goatImage = Service.TextureProvider.GetFromFile(GoatImagePath).GetWrapOrDefault();
-                if (goatImage != null)
+                var emotes = emoteDataManager.GetEmotes();
+                var names = emoteDataManager.GetNames();
+                var counter = emoteDataManager.GetCounter();
+                
+                ImGuiTableFlags flag = ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Resizable | ImGuiTableFlags.SizingStretchProp;
+                ImGui.BeginTable("timelinetable", emotes.Count + 1, flag);
+
+                ImGui.TableSetupColumn("Name");
+                //Service.Log.Debug("avant emote use");
+                foreach (var emote in emotes)
                 {
-                    using (ImRaii.PushIndent(55f))
+                    if (emotesNames.ContainsKey(emote))
+                        ImGui.TableSetupColumn($"{emotesNames[emote]}");
+                    else
+                        ImGui.TableSetupColumn($"{emote}?");
+                }
+                //Service.Log.Debug("après emote use");
+                ImGui.TableHeadersRow();
+                ImGui.TableNextRow();
+
+                foreach (var id in counter.Keys)
+                {
+                    ImGui.TableNextRow();
+                    ImGui.TableNextColumn();
+                    ImGui.TextUnformatted($"{names[id]}");
+                    foreach (var emote in emotes)
                     {
-                        ImGui.Image(goatImage.ImGuiHandle, new Vector2(goatImage.Width, goatImage.Height));
+                        ImGui.TableNextColumn();
+                        if (counter[id].ContainsKey(emote))
+                        {
+                            ImGui.TextUnformatted($"{counter[id][emote]}");
+                        }
+                        else
+                        {
+                            ImGui.TextUnformatted("0");
+                        }
                     }
                 }
-                else
-                {
-                    ImGui.TextUnformatted("Image not found.");
-                }
-
-                ImGuiHelpers.ScaledDummy(20.0f);
-
-                // Example for other services that Dalamud provides.
-                // ClientState provides a wrapper filled with information about the local player object and client.
-
-                var localPlayer = Service.ClientState.LocalPlayer;
-                if (localPlayer == null)
-                {
-                    ImGui.TextUnformatted("Our local player is currently not loaded.");
-                    return;
-                }
-
-                if (!localPlayer.ClassJob.IsValid)
-                {
-                    ImGui.TextUnformatted("Our current job is currently not valid.");
-                    return;
-                }
-
-                // ExtractText() should be the preferred method to read Lumina SeStrings,
-                // as ToString does not provide the actual text values, instead gives an encoded macro string.
-                ImGui.TextUnformatted($"Our current job is ({localPlayer.ClassJob.RowId}) \"{localPlayer.ClassJob.Value.Abbreviation.ExtractText()}\"");
-
-                // Example for quarrying Lumina directly, getting the name of our current area.
-                var territoryId = Service.ClientState.TerritoryType;
-                if (Service.DataManager.GetExcelSheet<TerritoryType>().TryGetRow(territoryId, out var territoryRow))
-                {
-                    ImGui.TextUnformatted($"We are currently in ({territoryId}) \"{territoryRow.PlaceName.Value.Name.ExtractText()}\"");
-                }
-                else
-                {
-                    ImGui.TextUnformatted("Invalid territory.");
-                }
+                ImGui.EndTable();
             }
         }
+        
     }
 }
