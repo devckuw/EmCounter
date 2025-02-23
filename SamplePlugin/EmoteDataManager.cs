@@ -1,7 +1,9 @@
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Lumina.Excel.Sheets;
+//using Microsoft.Data.Analysis;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -23,10 +25,14 @@ public class EmoteDataManager : IDisposable
     private RewardFlyTextPat rewardPat = new RewardFlyTextPat();
     private List<ushort> allowedEmoteReward = new List<ushort> { 105, 112, 113 , 146, 147 };
 
+    //public DataFrame data;
+
     public EmoteDataManager()
     {
         Service.Log.Debug("create EmoteDataManager");
+        
         UpdateOwner();
+
         foreach (var emote in Service.DataManager.GameData.GetExcelSheet<Emote>())
         {
             if (!emote.Name.IsEmpty)
@@ -66,7 +72,7 @@ public class EmoteDataManager : IDisposable
         if (!emotes.Contains(emoteId))
             emotes.Add(emoteId);
 
-        Service.Log.Debug($"on emote => add count {instigator.EntityId:X} {emoteId}  {instigator.Name} {instigator.HomeWorld.Value.Name}");
+        Service.Log.Debug($"on emote => add count {instigator.EntityId:X}/{instigator.EntityId} {emoteId}  {instigator.Name} {instigator.HomeWorld.Value.Name}");
         counterChanged++;
         names[instigator.EntityId] = instigator.Name.ToString();
         if (!counter.ContainsKey(instigator.EntityId))
@@ -159,6 +165,7 @@ public class EmoteDataManager : IDisposable
             }
         }
         emotes = emotes.Distinct().ToList();
+
     }
 
     public Dictionary<ulong, Dictionary<ushort, int>> GetCounter()

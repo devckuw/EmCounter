@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
+using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
@@ -40,18 +42,19 @@ public class MainWindow : Window, IDisposable
 
     public void Dispose() { }
 
-    public override void Draw()
+    public void DrawTabSorted()
     {
-        using (var tab = ImRaii.Child("SomeChildWithAScrollbar", Vector2.Zero, false))
+        using (var tab2 = ImRaii.Child("SomeChildWithAScrollbarButSorted", Vector2.Zero, false))
         {
-            if (tab.Success)
+            if (tab2.Success)
             {
                 var emotes = emoteDataManager.GetEmotes();
                 var names = emoteDataManager.GetNames();
                 var counter = emoteDataManager.GetCounter();
 
-                ImGuiTableFlags flag = ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Resizable | ImGuiTableFlags.SizingStretchProp;
-                ImGui.BeginTable("timelinetable", emotes.Count + 1, flag);
+                ImGuiTableFlags flag = ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Resizable | 
+                    ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.Sortable | ImGuiTableFlags.BordersInnerH;
+                ImGui.BeginTable("tabsorted", emotes.Count + 1, flag);
 
                 ImGui.TableSetupColumn("Name");
                 //Service.Log.Debug("avant emote use");
@@ -67,22 +70,46 @@ public class MainWindow : Window, IDisposable
                 ImGui.TableNextRow();
                 int[] total = new int[emotes.Count];
                 Array.Clear(total, 0, total.Length);
-                foreach (var id in counter.Keys)
+
+                ImGuiTableSortSpecsPtr sortInfo = ImGui.TableGetSortSpecs();
+                if (sortInfo.SpecsCount != 0)
+                {
+                    Service.Log.Debug($"{sortInfo.Specs.ColumnIndex} / {sortInfo.Specs.SortDirection} / {sortInfo.SpecsCount} / {sortInfo.SpecsDirty}");
+                }
+
+                IOrderedEnumerable<KeyValuePair<ulong, Dictionary<ushort, int>>> sorted;
+
+                if (sortInfo.Specs.ColumnIndex == 0)
+                {
+                    if(sortInfo.Specs.SortDirection == ImGuiSortDirection.Descending)
+                        sorted = counter.OrderByDescending(x => names[x.Key]);
+                    else
+                        sorted = counter.OrderBy(x => names[x.Key]);
+                }
+                else
+                {
+                    if (sortInfo.Specs.SortDirection == ImGuiSortDirection.Ascending)
+                        sorted = counter.OrderBy(x => counter[x.Key].ContainsKey(emotes[sortInfo.Specs.ColumnIndex - 1]) ? counter[x.Key][emotes[sortInfo.Specs.ColumnIndex - 1]] : 0);
+                    else
+                        sorted = counter.OrderByDescending(x => counter[x.Key].ContainsKey(emotes[sortInfo.Specs.ColumnIndex - 1]) ? counter[x.Key][emotes[sortInfo.Specs.ColumnIndex - 1]] : 0);
+                }
+
+                foreach (var id in sorted)
                 {
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
-                    ImGui.TextUnformatted($"{names[id]}");
+                    ImGui.TextUnformatted($"{names[id.Key]}");
                     int i = 0;
                     foreach (var emote in emotes)
                     {
                         ImGui.TableNextColumn();
-                        if (counter[id].ContainsKey(emote))
+                        if (counter[id.Key].ContainsKey(emote))
                         {
-                            ImGui.TextUnformatted($"{counter[id][emote]}");
+                            ImGui.TextUnformatted($"{counter[id.Key][emote]}");
                             //Service.Log.Debug($"{total[i]} {counter[id][emote]}");
-                            total[i] += counter[id][emote];
+                            total[i] += counter[id.Key][emote];
                             //Service.Log.Debug($"{total[i]}");
-                            
+
                         }
                         else
                         {
@@ -101,9 +128,16 @@ public class MainWindow : Window, IDisposable
                     ImGui.TableNextColumn();
                     ImGui.TextUnformatted($"{total[i]}");
                 }
+
                 ImGui.EndTable();
             }
+            ImGui.TextUnformatted("");
+            ImGuiComponents.HelpMarker("Right click to select/deselect emotes.");
         }
-        
+    }
+
+    public override void Draw()
+    {
+        DrawTabSorted();
     }
 }
