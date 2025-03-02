@@ -61,10 +61,10 @@ namespace EmCounter
 
                         if (canCount)
                         {
-                            Service.Log.Info($"on me {instigatorOb.ObjectIndex} {instigatorOb.EntityId:X} {instigatorOb.Name} {instigatorOb.HomeWorld.Value.Name}");
+                            /*Service.Log.Info($"on me {instigatorOb.ObjectIndex} {instigatorOb.EntityId:X} {instigatorOb.Name} {instigatorOb.HomeWorld.Value.Name}");
                             Service.Log.Info($"on me {instigatorOb.OwnerId} {instigatorOb.EntityId} {instigatorOb.DataId} {instigatorOb.NameId}");
                             Service.Log.Info($"on me {instigatorOb.OwnerId:X} {instigatorOb.EntityId:X} {instigatorOb.DataId} {instigatorOb.NameId}");
-                            Service.Log.Info($"on me {instigatorOb.GameObjectId}");
+                            Service.Log.Info($"on me {instigatorOb.GameObjectId}");*/
                             //Service.Log.Debug("emote handler ?");
                             //plugin.emoteHandler.ProcessEmote(emoteId, $"{instigatorOb.Name} {instigatorOb.HomeWorld.Value.Name}");
                             OnEmote?.Invoke(instigatorOb, emoteId);
@@ -72,8 +72,8 @@ namespace EmCounter
                         else
                         {
                             Service.Log.Info($"by me {instigatorOb.ObjectIndex} {instigatorOb.EntityId:X} {instigatorOb.Name} {instigatorOb.HomeWorld.Value.Name}");
-                            Service.Log.Info($"by me {instigatorOb.OwnerId} {instigatorOb.EntityId} {instigatorOb.DataId} {instigatorOb.NameId}");
-                            Service.Log.Info($"by me {instigatorOb.OwnerId:X} {instigatorOb.EntityId:X} {instigatorOb.DataId} {instigatorOb.NameId}");
+                            /*Service.Log.Info($"by me {instigatorOb.OwnerId} {instigatorOb.EntityId} {instigatorOb.DataId} {instigatorOb.NameId}");
+                            Service.Log.Info($"by me {instigatorOb.OwnerId:X} {instigatorOb.EntityId:X} {instigatorOb.DataId} {instigatorOb.NameId}");*/
                         }
                     }
                 }
