@@ -130,9 +130,14 @@ public class MainWindow : Window, IDisposable
                 }
 
                 ImGui.EndTable();
+                foreach (var name in names)
+                {
+                    ImGui.TextUnformatted($"{name.Key} {name.Value}");
+                }
             }
             ImGui.TextUnformatted("");
             ImGuiComponents.HelpMarker("Right click to select/deselect emotes.");
+
         }
     }
 

@@ -1,4 +1,5 @@
 using Dalamud.Game.ClientState.Objects.SubKinds;
+using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using Lumina.Excel.Sheets;
 //using Microsoft.Data.Analysis;
 using System;
@@ -61,6 +62,12 @@ public class EmoteDataManager : IDisposable
         ownerCID = 0;
     }
 
+    private unsafe ulong GetContentId(IPlayerCharacter player)
+    {
+        var chara = (Character*)player.Address;
+        return chara == null ? 0 : chara->ContentId;
+    }
+
     public void OnEmote(IPlayerCharacter instigator, ushort emoteId)
     {
         if (ownerCID == 0)
@@ -72,18 +79,24 @@ public class EmoteDataManager : IDisposable
         if (!emotes.Contains(emoteId))
             emotes.Add(emoteId);
 
-        Service.Log.Debug($"on emote => add count {instigator.EntityId:X}/{instigator.EntityId} {emoteId}  {instigator.Name} {instigator.HomeWorld.Value.Name}");
-        counterChanged++;
-        names[instigator.EntityId] = instigator.Name.ToString();
-        if (!counter.ContainsKey(instigator.EntityId))
-            counter[instigator.EntityId] = new Dictionary<ushort, int>();
-        if (!counter[instigator.EntityId].ContainsKey(emoteId))
+        ulong contentId = GetContentId(instigator);
+        if (contentId == 0)
         {
-            counter[instigator.EntityId][emoteId] = 1;
+            Service.Log.Debug("contentid => 0");
+            return;
+        }
+        Service.Log.Debug($"on emote => add count {contentId:X}/{contentId} {emoteId}  {instigator.Name} {instigator.HomeWorld.Value.Name}");
+        counterChanged++;
+        names[contentId] = instigator.Name.ToString();
+        if (!counter.ContainsKey(contentId))
+            counter[contentId] = new Dictionary<ushort, int>();
+        if (!counter[contentId].ContainsKey(emoteId))
+        {
+            counter[contentId][emoteId] = 1;
         }
         else
         {
-            counter[instigator.EntityId][emoteId]++;
+            counter[contentId][emoteId]++;
         }
         
         if (counterChanged > 50)
@@ -94,7 +107,7 @@ public class EmoteDataManager : IDisposable
 
         if (allowedEmoteReward.Contains(emoteId))
         {
-            rewardPat.OnPat(instigator, emotesNames[emoteId], (uint)counter[instigator.EntityId][emoteId]);
+            rewardPat.OnPat(instigator, emotesNames[emoteId], (uint)counter[contentId][emoteId]);
         }
     }
 
