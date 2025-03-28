@@ -32,15 +32,14 @@ public sealed class Plugin : IDalamudPlugin
         Service.pluginConfig = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
 
         // you might normally want to embed resources and load them from the manifest stream
-        var goatImagePath = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "goat.png");
 
-        emoteReader = new EmoteReaderHooks();
+        /*emoteReader = new EmoteReaderHooks();
         emoteDataManager = new EmoteDataManager();
 
         emoteReader.OnEmote += emoteDataManager.OnEmote;
         Service.ClientState.Login += emoteDataManager.OnLogin;
         Service.ClientState.Logout += emoteDataManager.OnLogout;
-        Service.ClientState.TerritoryChanged += emoteDataManager.OnTerritoryChanged;
+        Service.ClientState.TerritoryChanged += emoteDataManager.OnTerritoryChanged;*/
 
         ConfigWindow = new ConfigWindow();
         MainWindow = new MainWindow(emoteDataManager);

@@ -32,7 +32,7 @@ public class EmoteDataManager : IDisposable
     {
         Service.Log.Debug("create EmoteDataManager");
         
-        UpdateOwner();
+        /*UpdateOwner();
 
         foreach (var emote in Service.DataManager.GameData.GetExcelSheet<Emote>())
         {
@@ -40,7 +40,7 @@ public class EmoteDataManager : IDisposable
             {
                 emotesNames.Add((ushort)emote.RowId, emote.Name.ToString());
             }
-        }
+        }*/
     }
 
     public void Dispose()
