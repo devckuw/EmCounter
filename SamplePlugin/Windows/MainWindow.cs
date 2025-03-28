@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Interface.Components;
@@ -51,37 +52,148 @@ public class MainWindow : Window, IDisposable
                 var emotes = emoteDataManager.GetEmotes();
                 var names = emoteDataManager.GetNames();
                 var counter = emoteDataManager.GetCounter();
-
-                ImGuiTableFlags flag = ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Resizable | 
+                
+                bool isDataSafe = names.Count == counter.Count;
+                Service.Log.Debug($"{isDataSafe}");
+                ImGuiTableFlags flag = ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Resizable |
                     ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.Sortable | ImGuiTableFlags.BordersInnerH;
-                ImGui.BeginTable("tabsorted", emotes.Count + 1, flag);
-
-                ImGui.TableSetupColumn("Name");
-                //Service.Log.Debug("avant emote use");
-                foreach (var emote in emotes)
+                if (ImGui.BeginTable("tabsorted3", emotes.Count + 1, ImGuiTableFlags.Hideable | ImGuiTableFlags.Sortable | ImGuiTableFlags.Resizable | ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerH | ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.SizingStretchSame))
+                //if (ImGui.BeginTable("tabsorted2", emotes.Count + 1, flag))
                 {
-                    if (emotesNames.ContainsKey(emote))
-                        ImGui.TableSetupColumn($"{emotesNames[emote]}");
+                    ImGui.TableSetupColumn("Name");
+                    foreach (var emote in emotes)
+                    {
+                        if (emotesNames.ContainsKey(emote))
+                            ImGui.TableSetupColumn($"{emotesNames[emote]}");
+                        else
+                            ImGui.TableSetupColumn($"{emote}?");
+                    }
+
+                    ImGui.TableHeadersRow();
+
+                    int[] total = new int[emotes.Count];
+                    Array.Clear(total, 0, total.Length);
+
+                    ImGuiTableSortSpecsPtr sortInfo = ImGui.TableGetSortSpecs();
+                    if (sortInfo.SpecsCount != 0)
+                    {
+                        Service.Log.Debug($"{sortInfo.Specs.ColumnIndex} / {sortInfo.Specs.SortDirection} / {sortInfo.SpecsCount} / {sortInfo.SpecsDirty}");
+                    }
+
+                    IOrderedEnumerable<KeyValuePair<ulong, Dictionary<ushort, int>>> sorted;
+                    if (isDataSafe)
+                    {
+                        if (sortInfo.Specs.ColumnIndex == 0)
+                        {
+                            if (sortInfo.Specs.SortDirection == ImGuiSortDirection.Descending)
+                                sorted = counter.OrderByDescending(x => names[x.Key]);
+                            else
+                                sorted = counter.OrderBy(x => names[x.Key]);
+                        }
+                        else
+                        {
+                            if (sortInfo.Specs.SortDirection == ImGuiSortDirection.Ascending)
+                                sorted = counter.OrderBy(x => counter[x.Key].ContainsKey(emotes[sortInfo.Specs.ColumnIndex - 1]) ? counter[x.Key][emotes[sortInfo.Specs.ColumnIndex - 1]] : 0);
+                            else
+                                sorted = counter.OrderByDescending(x => counter[x.Key].ContainsKey(emotes[sortInfo.Specs.ColumnIndex - 1]) ? counter[x.Key][emotes[sortInfo.Specs.ColumnIndex - 1]] : 0);
+                        }
+                    }
                     else
-                        ImGui.TableSetupColumn($"{emote}?");
-                }
-                //Service.Log.Debug("après emote use");
-                ImGui.TableHeadersRow();
-                ImGui.TableNextRow();
-                int[] total = new int[emotes.Count];
-                Array.Clear(total, 0, total.Length);
+                    {
+                        sorted = (IOrderedEnumerable<KeyValuePair<ulong, Dictionary<ushort, int>>>)counter;
+                    }
 
-                ImGuiTableSortSpecsPtr sortInfo = ImGui.TableGetSortSpecs();
-                if (sortInfo.SpecsCount != 0)
+                    foreach (var id in sorted)
+                    {
+                        ImGui.TableNextRow();
+                        ImGui.TableNextColumn();
+                        if (names.ContainsKey(id.Key))
+                            ImGui.TextUnformatted($"{names[id.Key]}");
+                        else
+                            ImGui.TextUnformatted($"???");
+                        int i = 0;
+                        foreach (var emote in emotes)
+                        {
+                            ImGui.TableNextColumn();
+                            if (counter[id.Key].ContainsKey(emote))
+                            {
+                                ImGui.TextUnformatted($"{counter[id.Key][emote]}");
+                                total[i] += counter[id.Key][emote];
+                            }
+                            else
+                            {
+                                ImGui.TextUnformatted("0");
+                            }
+                            i += 1;
+                        }
+                    }
+
+                    ImGui.TableHeadersRow();
+
+                    ImGui.TableNextRow();
+                    ImGui.TableNextColumn();
+                    ImGui.TextUnformatted("Total");
+                    for (int i = 0; i < emotes.Count; i++)
+                    {
+                        ImGui.TableNextColumn();
+                        ImGui.TextUnformatted($"{total[i]}");
+                    }
+
+                    ImGui.EndTable();
+                }
+#if DEBUG
+                foreach (var name in names)
                 {
-                    Service.Log.Debug($"{sortInfo.Specs.ColumnIndex} / {sortInfo.Specs.SortDirection} / {sortInfo.SpecsCount} / {sortInfo.SpecsDirty}");
+                    ImGui.TextUnformatted($"{name.Key} {name.Value}");
                 }
+#endif
+                    
+            }
+            ImGui.TextUnformatted("");
+            ImGuiComponents.HelpMarker("Right click to select/deselect emotes.");
+        }
+    }
 
-                IOrderedEnumerable<KeyValuePair<ulong, Dictionary<ushort, int>>> sorted;
+    public void DrawTabSorted2()
+    {
+        var emotes = emoteDataManager.GetEmotes();
+        var names = emoteDataManager.GetNames();
+        var counter = emoteDataManager.GetCounter();
 
+        bool isDataSafe = names.Count == counter.Count;
+        Service.Log.Debug($"{isDataSafe}");
+        ImGuiTableFlags flag = ImGuiTableFlags.Hideable | ImGuiTableFlags.Sortable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Resizable |
+            ImGuiTableFlags.SizingStretchProp  | ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInner;
+        //if (ImGui.BeginTable("tabsorted3", emotes.Count + 1, ImGuiTableFlags.Hideable | ImGuiTableFlags.Sortable | ImGuiTableFlags.Resizable | ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerH | ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.SizingStretchSame))
+        if (ImGui.BeginTable("tabsorted", emotes.Count + 1, flag))
+        {
+            ImGui.TableSetupColumn("Name");
+            foreach (var emote in emotes)
+            {
+                if (emotesNames.ContainsKey(emote))
+                    ImGui.TableSetupColumn($"{emotesNames[emote]}");
+                else
+                    ImGui.TableSetupColumn($"{emote}?");
+            }
+
+            ImGui.TableHeadersRow();
+
+            int[] total = new int[emotes.Count];
+            Array.Clear(total, 0, total.Length);
+
+            IOrderedEnumerable<KeyValuePair<ulong, Dictionary<ushort, int>>> sorted;
+
+            ImGuiTableSortSpecsPtr sortInfo = ImGui.TableGetSortSpecs();
+            if (sortInfo.SpecsCount != 0)
+            {
+                Service.Log.Debug($"{sortInfo.Specs.ColumnIndex} / {sortInfo.Specs.SortDirection} / {sortInfo.SpecsCount} / {sortInfo.SpecsDirty}");
+            }
+
+            if (isDataSafe)
+            {
                 if (sortInfo.Specs.ColumnIndex == 0)
                 {
-                    if(sortInfo.Specs.SortDirection == ImGuiSortDirection.Descending)
+                    if (sortInfo.Specs.SortDirection == ImGuiSortDirection.Descending)
                         sorted = counter.OrderByDescending(x => names[x.Key]);
                     else
                         sorted = counter.OrderBy(x => names[x.Key]);
@@ -93,56 +205,54 @@ public class MainWindow : Window, IDisposable
                     else
                         sorted = counter.OrderByDescending(x => counter[x.Key].ContainsKey(emotes[sortInfo.Specs.ColumnIndex - 1]) ? counter[x.Key][emotes[sortInfo.Specs.ColumnIndex - 1]] : 0);
                 }
-
-                foreach (var id in sorted)
-                {
-                    ImGui.TableNextRow();
-                    ImGui.TableNextColumn();
-                    ImGui.TextUnformatted($"{names[id.Key]}");
-                    int i = 0;
-                    foreach (var emote in emotes)
-                    {
-                        ImGui.TableNextColumn();
-                        if (counter[id.Key].ContainsKey(emote))
-                        {
-                            ImGui.TextUnformatted($"{counter[id.Key][emote]}");
-                            //Service.Log.Debug($"{total[i]} {counter[id][emote]}");
-                            total[i] += counter[id.Key][emote];
-                            //Service.Log.Debug($"{total[i]}");
-
-                        }
-                        else
-                        {
-                            ImGui.TextUnformatted("0");
-                        }
-                        i += 1;
-                    }
-                }
-                ImGui.TableNextRow();
-                ImGui.TableHeadersRow();
+            }
+            else
+            {
+                sorted = (IOrderedEnumerable<KeyValuePair<ulong, Dictionary<ushort, int>>>)counter;
+            }
+            sorted = (IOrderedEnumerable<KeyValuePair<ulong, Dictionary<ushort, int>>>)counter;
+            foreach (var id in sorted)
+            {
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
-                ImGui.TextUnformatted("Total");
-                for (int i = 0; i < emotes.Count; i++)
+                if (names.ContainsKey(id.Key))
+                    ImGui.TextUnformatted($"{names[id.Key]}");
+                else
+                    ImGui.TextUnformatted($"???");
+                int i = 0;
+                foreach (var emote in emotes)
                 {
                     ImGui.TableNextColumn();
-                    ImGui.TextUnformatted($"{total[i]}");
+                    if (counter[id.Key].ContainsKey(emote))
+                    {
+                        ImGui.TextUnformatted($"{counter[id.Key][emote]}");
+                        total[i] += counter[id.Key][emote];
+                    }
+                    else
+                    {
+                        ImGui.TextUnformatted("0");
+                    }
+                    i += 1;
                 }
-
-                ImGui.EndTable();
-                /*foreach (var name in names)
-                {
-                    ImGui.TextUnformatted($"{name.Key} {name.Value}");
-                }*/
             }
-            ImGui.TextUnformatted("");
-            ImGuiComponents.HelpMarker("Right click to select/deselect emotes.");
 
+            ImGui.TableHeadersRow();
+
+            ImGui.TableNextRow();
+            ImGui.TableNextColumn();
+            ImGui.TextUnformatted("Total");
+            for (int i = 0; i < emotes.Count; i++)
+            {
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted($"{total[i]}");
+            }
+
+            ImGui.EndTable();
         }
     }
 
     public override void Draw()
     {
-        DrawTabSorted();
+        //DrawTabSorted();
     }
 }

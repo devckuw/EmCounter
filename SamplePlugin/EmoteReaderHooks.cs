@@ -48,7 +48,9 @@ namespace EmCounter
         void OnEmoteDetour(ulong unk, ulong instigatorAddr, ushort emoteId, ulong targetId, ulong unk2)
         {
             // unk - some field of event framework singleton? doesn't matter here anyway
-            //Service.Log.Info($"Emote >> unk:{unk:X}, instigatorAddr:{instigatorAddr:X}, emoteId:{emoteId}, targetId:{targetId:X}, unk2:{unk2:X}");
+#if DEBUG
+            Service.Log.Info($"Emote >> unk:{unk:X}, instigatorAddr:{instigatorAddr:X}, emoteId:{emoteId}, targetId:{targetId:X}, unk2:{unk2:X}");
+#endif
 
             if (Service.ClientState.LocalPlayer != null)
             {
@@ -61,20 +63,17 @@ namespace EmCounter
 
                         if (canCount)
                         {
-                            /*Service.Log.Info($"on me {instigatorOb.ObjectIndex} {instigatorOb.EntityId:X} {instigatorOb.Name} {instigatorOb.HomeWorld.Value.Name}");
-                            Service.Log.Info($"on me {instigatorOb.OwnerId} {instigatorOb.EntityId} {instigatorOb.DataId} {instigatorOb.NameId}");
-                            Service.Log.Info($"on me {instigatorOb.OwnerId:X} {instigatorOb.EntityId:X} {instigatorOb.DataId} {instigatorOb.NameId}");
-                            Service.Log.Info($"on me {instigatorOb.GameObjectId}");*/
-                            //Service.Log.Debug("emote handler ?");
-                            //plugin.emoteHandler.ProcessEmote(emoteId, $"{instigatorOb.Name} {instigatorOb.HomeWorld.Value.Name}");
+#if DEBUG
+                            Service.Log.Info($"on me {GetContentId(instigatorOb):X} {instigatorOb.Name} {instigatorOb.HomeWorld.Value.Name}");
+#endif
                             OnEmote?.Invoke(instigatorOb, emoteId);
                         }
+#if DEBUG
                         else
                         {
-                            Service.Log.Info($"by me {instigatorOb.ObjectIndex} {instigatorOb.EntityId:X} {instigatorOb.Name} {instigatorOb.HomeWorld.Value.Name}");
-                            /*Service.Log.Info($"by me {instigatorOb.OwnerId} {instigatorOb.EntityId} {instigatorOb.DataId} {instigatorOb.NameId}");
-                            Service.Log.Info($"by me {instigatorOb.OwnerId:X} {instigatorOb.EntityId:X} {instigatorOb.DataId} {instigatorOb.NameId}");*/
+                            Service.Log.Info($"by me {GetContentId(instigatorOb):X} {instigatorOb.Name} {instigatorOb.HomeWorld.Value.Name}");
                         }
+#endif
                     }
                 }
             }

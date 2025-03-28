@@ -24,7 +24,7 @@ public class EmoteDataManager : IDisposable
     private Dictionary<ushort, string> emotesNames = new Dictionary<ushort, string>();
 
     private RewardFlyTextPat rewardPat = new RewardFlyTextPat();
-    private List<ushort> allowedEmoteReward = new List<ushort> { 105, 112, 113 , 146, 147 };
+    private List<ushort> allowedEmoteReward = new List<ushort> { 105, 112, 113 , 146, 147 , 213};
 
     //public DataFrame data;
 
@@ -82,10 +82,14 @@ public class EmoteDataManager : IDisposable
         ulong contentId = GetContentId(instigator);
         if (contentId == 0)
         {
+#if DEBUG
             Service.Log.Debug("contentid => 0");
+#endif
             return;
         }
+#if DEBUG
         Service.Log.Debug($"on emote => add count {contentId:X}/{contentId} {emoteId}  {instigator.Name} {instigator.HomeWorld.Value.Name}");
+#endif
         counterChanged++;
         names[contentId] = instigator.Name.ToString();
         if (!counter.ContainsKey(contentId))
@@ -105,15 +109,55 @@ public class EmoteDataManager : IDisposable
             Save();
         }
 
-        if (allowedEmoteReward.Contains(emoteId))
+        switch (emoteId)
         {
-            rewardPat.OnPat(instigator, emotesNames[emoteId], (uint)counter[contentId][emoteId]);
+            case 213: // High Five
+                if (Service.pluginConfig.showSpanks)
+                    rewardPat.OnPat(instigator, "Spank", (uint)counter[contentId][emoteId]);
+                break;
+            case 46: // Blow Kiss
+                rewardPat.OnPat(instigator, "Dote", (uint)counter[contentId][emoteId]);
+                break;
+            case 105: // Pet
+            case 112: // Hug
+            case 113: // Embrace
+            case 146: // Dote
+            case 147: // Dote
+                rewardPat.OnPat(instigator, emotesNames[emoteId], (uint)counter[contentId][emoteId]);
+                break;
+            default:
+                break;
         }
+
+        /*if (allowedEmoteReward.Contains(emoteId))
+        {
+            switch (emoteId)
+            {
+                case 213: // High Five
+                    if (Service.pluginConfig.showSpanks)
+                        rewardPat.OnPat(instigator, "Spank", (uint)counter[contentId][emoteId]);
+                    break;
+                case 46: // Blow Kiss
+                    rewardPat.OnPat(instigator, "Dote", (uint)counter[contentId][emoteId]);
+                    break;
+                case 105: // Pet
+                case 112: // Hug
+                case 113: // Embrace
+                case 146: // Dote
+                case 147: // Dote
+                    rewardPat.OnPat(instigator, emotesNames[emoteId], (uint)counter[contentId][emoteId]);
+                    break;
+                default:
+                    break;
+            }
+        }*/
     }
 
     public void OnTerritoryChanged(ushort areaId)
     {
+#if DEBUG
         Service.Log.Debug("on TerritoryChanged");
+#endif
         if (counterChanged > 0)
         {
             counterChanged = 0;
@@ -178,11 +222,13 @@ public class EmoteDataManager : IDisposable
             }
         }
         emotes = emotes.Distinct().ToList();
+        Service.Log.Debug($"{counter.Count} {names.Count} {emotes.Count}");
 
     }
 
     public Dictionary<ulong, Dictionary<ushort, int>> GetCounter()
     {
+        Service.Log.Debug($"{counter.Count} {names.Count} {emotes.Count}");
         return counter;
     }
 

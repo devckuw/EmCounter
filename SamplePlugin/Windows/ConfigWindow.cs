@@ -17,7 +17,7 @@ public class ConfigWindow : Window, IDisposable
         Flags = ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar |
                 ImGuiWindowFlags.NoScrollWithMouse;
 
-        Size = new Vector2(232, 90);
+        Size = new Vector2(232, 120);
         SizeCondition = ImGuiCond.Always;
 
         Configuration = Service.pluginConfig;
@@ -41,18 +41,25 @@ public class ConfigWindow : Window, IDisposable
     public override void Draw()
     {
         // can't ref a property, so use a local copy
-        var configValue = Configuration.showFlyText;
-        if (ImGui.Checkbox("Show flying text", ref configValue))
+        var showFlyText = Configuration.showFlyText;
+        if (ImGui.Checkbox("Show flying text", ref showFlyText))
         {
-            Configuration.showFlyText = configValue;
+            Configuration.showFlyText = showFlyText;
             // can save immediately on change, if you don't want to provide a "Save and Close" button
             Configuration.Save();
         }
 
-        var movable = Configuration.showFlyTextNames;
-        if (ImGui.Checkbox("Show name in flying text", ref movable))
+        var showFlyTextNames = Configuration.showFlyTextNames;
+        if (ImGui.Checkbox("Show name in flying text", ref showFlyTextNames))
         {
-            Configuration.showFlyTextNames = movable;
+            Configuration.showFlyTextNames = showFlyTextNames;
+            Configuration.Save();
+        }
+
+        var showSpanks = Configuration.showSpanks;
+        if (ImGui.Checkbox("Show High Five", ref showSpanks))
+        {
+            Configuration.showSpanks = showSpanks;
             Configuration.Save();
         }
     }
